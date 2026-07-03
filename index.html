@@ -54,13 +54,19 @@
         <div class="section-heading">
           <div>
             <h2 id="menuTitle">中餐菜单</h2>
-            <p>选择想吃的菜，加入购物车后提交模拟订单。</p>
+            <p>选择想吃的菜，进入详情后选择份量和数量。</p>
           </div>
           <div class="category-tabs" id="categoryTabs" aria-label="菜品分类"></div>
         </div>
         <div class="menu-grid" id="menuGrid"></div>
       </section>
     </main>
+
+    <button class="floating-cart" id="floatingCart" type="button" aria-label="查看购物车">
+      <span>已选 <strong id="floatingCartCount">0</strong> 件</span>
+      <span id="floatingCartTotal">¥0</span>
+      <span>查看购物车</span>
+    </button>
 
     <aside class="drawer" id="cartDrawer" aria-hidden="true" aria-labelledby="cartTitle">
       <div class="drawer-panel">
@@ -94,6 +100,13 @@
         <div class="drawer-content order-list" id="orderList"></div>
       </div>
     </aside>
+
+    <section class="dish-modal" id="dishModal" aria-hidden="true" aria-labelledby="dishModalTitle">
+      <div class="dish-modal-card">
+        <button class="close-button dish-modal-close" id="dishModalClose" type="button" aria-label="关闭菜品详情">×</button>
+        <div id="dishModalContent"></div>
+      </div>
+    </section>
 
     <section class="delivery-modal" id="deliveryModal" aria-hidden="true" aria-live="polite">
       <div class="delivery-card">

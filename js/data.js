@@ -1,4 +1,10 @@
 (function () {
+  const defaultPortions = [
+    { id: "small", name: "小份", priceDelta: -4 },
+    { id: "medium", name: "中份", priceDelta: 0 },
+    { id: "large", name: "大份", priceDelta: 8 }
+  ];
+
   const dishes = [
     {
       id: "kung-pao-chicken",
@@ -7,6 +13,7 @@
       category: "川菜",
       tag: "招牌",
       heat: "微辣",
+      description: "鸡丁鲜嫩，花生香脆，入口微辣回甜，是经典下饭川菜。",
       image: "assets/images/kung-pao-chicken.jpg",
       color: "red"
     },
@@ -17,6 +24,7 @@
       category: "川菜",
       tag: "下饭",
       heat: "微辣",
+      description: "酸甜咸香层次丰富，肉丝滑嫩，配米饭很合适。",
       image: "assets/images/yu-xiang-pork.jpg",
       color: "orange"
     },
@@ -27,6 +35,7 @@
       category: "川菜",
       tag: "热销",
       heat: "中辣",
+      description: "豆腐细嫩，酱香和花椒香明显，热乎乎地拌饭很舒服。",
       image: "assets/images/mapo-tofu.jpg",
       color: "red"
     },
@@ -37,6 +46,7 @@
       category: "江浙",
       tag: "经典",
       heat: "不辣",
+      description: "肥瘦相间，酱汁浓郁，甜咸平衡，适合慢慢吃。",
       image: "assets/images/hong-shao-rou.jpg",
       color: "brown"
     },
@@ -47,6 +57,7 @@
       category: "川菜",
       tag: "高能",
       heat: "中辣",
+      description: "牛肉滑嫩，汤底麻辣鲜香，蔬菜吸满汤汁。",
       image: "assets/images/shui-zhu-beef.jpg",
       color: "red"
     },
@@ -57,6 +68,7 @@
       category: "川菜",
       tag: "大份",
       heat: "微辣",
+      description: "鱼片细嫩，酸菜开胃，汤底鲜亮，适合多人分享。",
       image: "assets/images/suan-cai-yu.jpg",
       color: "green"
     },
@@ -67,6 +79,7 @@
       category: "家常",
       tag: "清爽",
       heat: "不辣",
+      description: "番茄酸甜，鸡蛋松软，是稳定温柔的家常选择。",
       image: "assets/images/tomato-eggs.jpg",
       color: "yellow"
     },
@@ -77,6 +90,7 @@
       category: "湘菜",
       tag: "爆香",
       heat: "中辣",
+      description: "牛肉香辣有锅气，青椒提味，适合想吃重口的时候。",
       image: "assets/images/xiao-chao-beef.jpg",
       color: "green"
     },
@@ -87,6 +101,7 @@
       category: "川菜",
       tag: "酥香",
       heat: "重辣",
+      description: "鸡块外酥里嫩，干辣椒香气足，越嚼越香。",
       image: "assets/images/lazi-chicken.jpg",
       color: "red"
     },
@@ -97,6 +112,7 @@
       category: "鲁菜",
       tag: "酸甜",
       heat: "不辣",
+      description: "外壳轻脆，酸甜酱汁明亮，适合不吃辣的快乐。",
       image: "assets/images/sweet-sour-pork.jpg",
       color: "pink"
     },
@@ -107,6 +123,7 @@
       category: "主食",
       tag: "饱腹",
       heat: "不辣",
+      description: "米粒分明，配料丰富，单点也能吃得很完整。",
       image: "assets/images/yangzhou-fried-rice.jpg",
       color: "yellow"
     },
@@ -117,10 +134,15 @@
       category: "主食",
       tag: "快手",
       heat: "不辣",
+      description: "葱香浓，面条筋道，简单直接但很有满足感。",
       image: "assets/images/scallion-noodles.jpg",
       color: "green"
     }
-  ];
+  ].map((dish) => ({
+    ...dish,
+    portions: defaultPortions.map((portion) => ({ ...portion })),
+    defaultPortionId: "large"
+  }));
 
   window.DOPAMINE_DISHES = dishes;
 })();

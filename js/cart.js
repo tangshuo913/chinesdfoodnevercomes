@@ -2,7 +2,8 @@
   let cart = [];
 
   function load() {
-    cart = AppStorage.getCart();
+    cart = AppStorage.getCart().map(normalizeItem).filter(Boolean);
+    AppStorage.setCart(cart);
     return cart;
   }
 
@@ -15,45 +16,93 @@
     return DOPAMINE_DISHES.find((dish) => dish.id === dishId);
   }
 
+  function getPortion(dish, portionId) {
+    if (!dish) return null;
+    const preferredId = portionId || dish.defaultPortionId || "large";
+    return dish.portions.find((portion) => portion.id === preferredId) || dish.portions[0];
+  }
+
+  function getConfiguredPrice(dish, portion) {
+    return Math.max(1, dish.price + portion.priceDelta);
+  }
+
+  function getCartKey(dishId, portionId) {
+    return `${dishId}-${portionId}`;
+  }
+
+  function normalizeItem(item) {
+    const dish = findDish(item.id);
+    if (!dish) return item && item.cartKey ? item : null;
+    const portion = getPortion(dish, item.portionId);
+    const qty = Math.max(1, Number(item.qty) || 1);
+
+    return {
+      id: dish.id,
+      cartKey: item.cartKey || getCartKey(dish.id, portion.id),
+      name: dish.name,
+      portionId: portion.id,
+      portionName: portion.name,
+      price: Number(item.price) || getConfiguredPrice(dish, portion),
+      basePrice: dish.price,
+      image: dish.image,
+      color: dish.color,
+      qty
+    };
+  }
+
   function add(dishId) {
     const dish = findDish(dishId);
-    if (!dish) return;
+    const portion = getPortion(dish, dish && dish.defaultPortionId);
+    if (!dish || !portion) return;
+    addConfigured(dishId, portion.id, 1);
+  }
 
-    const existing = cart.find((item) => item.id === dishId);
+  function addConfigured(dishId, portionId, qty) {
+    const dish = findDish(dishId);
+    const portion = getPortion(dish, portionId);
+    const amount = Math.max(1, Number(qty) || 1);
+    if (!dish || !portion) return;
+
+    const cartKey = getCartKey(dish.id, portion.id);
+    const existing = cart.find((item) => item.cartKey === cartKey);
     if (existing) {
-      existing.qty += 1;
+      existing.qty += amount;
     } else {
       cart.push({
         id: dish.id,
+        cartKey,
         name: dish.name,
-        price: dish.price,
+        portionId: portion.id,
+        portionName: portion.name,
+        price: getConfiguredPrice(dish, portion),
+        basePrice: dish.price,
         image: dish.image,
         color: dish.color,
-        qty: 1
+        qty: amount
       });
     }
     save();
   }
 
-  function increase(dishId) {
-    const item = cart.find((entry) => entry.id === dishId);
+  function increase(cartKey) {
+    const item = cart.find((entry) => entry.cartKey === cartKey);
     if (!item) return;
     item.qty += 1;
     save();
   }
 
-  function decrease(dishId) {
-    const item = cart.find((entry) => entry.id === dishId);
+  function decrease(cartKey) {
+    const item = cart.find((entry) => entry.cartKey === cartKey);
     if (!item) return;
     item.qty -= 1;
     if (item.qty <= 0) {
-      cart = cart.filter((entry) => entry.id !== dishId);
+      cart = cart.filter((entry) => entry.cartKey !== cartKey);
     }
     save();
   }
 
-  function remove(dishId) {
-    cart = cart.filter((entry) => entry.id !== dishId);
+  function remove(cartKey) {
+    cart = cart.filter((entry) => entry.cartKey !== cartKey);
     save();
   }
 
@@ -75,6 +124,7 @@
   window.CartStore = {
     load,
     add,
+    addConfigured,
     increase,
     decrease,
     remove,

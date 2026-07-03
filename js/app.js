@@ -1,6 +1,9 @@
 (function () {
   const dom = {};
   let selectedCategory = "全部";
+  let activeDish = null;
+  let selectedPortionId = "large";
+  let selectedDishQty = 1;
 
   document.addEventListener("DOMContentLoaded", init);
 
@@ -29,11 +32,17 @@
       "cartSummary",
       "cartTotal",
       "submitOrder",
+      "floatingCart",
+      "floatingCartCount",
+      "floatingCartTotal",
       "historyToggle",
       "historyClose",
       "historyDrawer",
       "orderList",
       "orderCount",
+      "dishModal",
+      "dishModalClose",
+      "dishModalContent",
       "deliveryModal",
       "deliveryTitle",
       "deliverySubtitle",
@@ -50,9 +59,20 @@
 
   function bindEvents() {
     dom.cartToggle.addEventListener("click", () => openDrawer(dom.cartDrawer));
+    dom.floatingCart.addEventListener("click", () => openDrawer(dom.cartDrawer));
     dom.cartClose.addEventListener("click", () => closeDrawer(dom.cartDrawer));
     dom.historyToggle.addEventListener("click", () => openDrawer(dom.historyDrawer));
     dom.historyClose.addEventListener("click", () => closeDrawer(dom.historyDrawer));
+    dom.cartDrawer.addEventListener("click", (event) => {
+      if (event.target === dom.cartDrawer) closeDrawer(dom.cartDrawer);
+    });
+    dom.historyDrawer.addEventListener("click", (event) => {
+      if (event.target === dom.historyDrawer) closeDrawer(dom.historyDrawer);
+    });
+    dom.dishModalClose.addEventListener("click", closeDishModal);
+    dom.dishModal.addEventListener("click", (event) => {
+      if (event.target === dom.dishModal) closeDishModal();
+    });
     dom.closeDelivery.addEventListener("click", hideDeliveryModal);
     dom.viewCurrentOrder.addEventListener("click", () => {
       hideDeliveryModal();
@@ -71,6 +91,7 @@
       if (event.key !== "Escape") return;
       closeDrawer(dom.cartDrawer);
       closeDrawer(dom.historyDrawer);
+      closeDishModal();
       hideDeliveryModal();
     });
   }
@@ -106,9 +127,11 @@
     dom.menuCount.textContent = `${DOPAMINE_DISHES.length} 道菜`;
     dom.menuGrid.innerHTML = visibleDishes
       .map((dish) => {
-        const inCart = cart.items.find((item) => item.id === dish.id);
+        const inCartQty = cart.items
+          .filter((item) => item.id === dish.id)
+          .reduce((sum, item) => sum + item.qty, 0);
         return `
-          <article class="dish-card" data-color="${dish.color}">
+          <article class="dish-card" data-color="${dish.color}" data-dish="${dish.id}">
             <div class="dish-image" role="img" aria-label="${dish.name} 图片占位">
               <img src="${dish.image}" alt="${dish.name}" loading="lazy" onerror="this.hidden=true" />
               <span>${dish.name.slice(0, 1)}</span>
@@ -121,11 +144,11 @@
               <h3>${dish.name}</h3>
               <div class="dish-bottom">
                 <div>
-                  <strong>¥${dish.price}</strong>
+                  <strong>¥${dish.price}起</strong>
                   <small>${dish.tag}</small>
                 </div>
                 <button class="add-button" type="button" data-add="${dish.id}">
-                  ${inCart ? `已加 ${inCart.qty}` : "加入"}
+                  ${inCartQty ? `已选 ${inCartQty}` : "选择"}
                 </button>
               </div>
             </div>
@@ -134,13 +157,109 @@
       })
       .join("");
 
+    dom.menuGrid.querySelectorAll(".dish-card[data-dish]").forEach((card) => {
+      card.addEventListener("click", () => openDishModal(card.dataset.dish));
+    });
     dom.menuGrid.querySelectorAll("[data-add]").forEach((button) => {
-      button.addEventListener("click", () => {
-        CartStore.add(button.dataset.add);
-        pulseButton(button);
-        showToast("已加入购物车");
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openDishModal(button.dataset.add);
       });
     });
+  }
+
+  function openDishModal(dishId) {
+    activeDish = DOPAMINE_DISHES.find((dish) => dish.id === dishId);
+    if (!activeDish) return;
+    selectedPortionId = activeDish.defaultPortionId || "large";
+    selectedDishQty = 1;
+    renderDishModal();
+    dom.dishModal.classList.add("open");
+    dom.dishModal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeDishModal() {
+    moveFocusOutOfLayer(dom.dishModal);
+    dom.dishModal.classList.remove("open");
+    dom.dishModal.setAttribute("aria-hidden", "true");
+  }
+
+  function renderDishModal() {
+    if (!activeDish) return;
+    const portion = getSelectedPortion();
+    const unitPrice = getPortionPrice(activeDish, portion);
+    const total = unitPrice * selectedDishQty;
+
+    dom.dishModalContent.innerHTML = `
+      <div class="dish-detail-image" data-color="${activeDish.color}">
+        <img src="${activeDish.image}" alt="${activeDish.name}" loading="lazy" onerror="this.hidden=true" />
+        <span>${activeDish.name.slice(0, 1)}</span>
+      </div>
+      <div class="dish-detail-body">
+        <div class="dish-detail-meta">
+          <span>${activeDish.category}</span>
+          <span>${activeDish.heat}</span>
+          <span>${activeDish.tag}</span>
+        </div>
+        <h2 id="dishModalTitle">${activeDish.name}</h2>
+        <p>${activeDish.description}</p>
+        <div class="portion-block">
+          <div class="option-title">
+            <strong>份量</strong>
+            <span>默认大份</span>
+          </div>
+          <div class="portion-options">
+            ${activeDish.portions
+              .map((entry) => {
+                const price = getPortionPrice(activeDish, entry);
+                return `
+                  <button class="portion-button${entry.id === selectedPortionId ? " active" : ""}" type="button" data-portion="${entry.id}">
+                    <span>${entry.name}</span>
+                    <strong>¥${price}</strong>
+                  </button>
+                `;
+              })
+              .join("")}
+          </div>
+        </div>
+        <div class="dish-modal-footer">
+          <div class="modal-qty-stepper" aria-label="选择数量">
+            <button type="button" data-modal-qty="-1" aria-label="减少数量">−</button>
+            <strong>${selectedDishQty}</strong>
+            <button type="button" data-modal-qty="1" aria-label="增加数量">+</button>
+          </div>
+          <button class="confirm-dish-button" type="button" data-confirm-dish>
+            确认加菜 ¥${total}
+          </button>
+        </div>
+      </div>
+    `;
+
+    dom.dishModalContent.querySelectorAll("[data-portion]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedPortionId = button.dataset.portion;
+        renderDishModal();
+      });
+    });
+    dom.dishModalContent.querySelectorAll("[data-modal-qty]").forEach((button) => {
+      button.addEventListener("click", () => {
+        selectedDishQty = Math.max(1, selectedDishQty + Number(button.dataset.modalQty));
+        renderDishModal();
+      });
+    });
+    dom.dishModalContent.querySelector("[data-confirm-dish]").addEventListener("click", () => {
+      CartStore.addConfigured(activeDish.id, selectedPortionId, selectedDishQty);
+      closeDishModal();
+      showToast("已加入购物车");
+    });
+  }
+
+  function getSelectedPortion() {
+    return activeDish.portions.find((portion) => portion.id === selectedPortionId) || activeDish.portions[0];
+  }
+
+  function getPortionPrice(dish, portion) {
+    return Math.max(1, dish.price + portion.priceDelta);
   }
 
   function renderCart() {
@@ -148,6 +267,9 @@
     dom.cartCount.textContent = cart.totalItems;
     dom.cartSummary.textContent = cart.totalItems ? `${cart.totalItems} 件菜品` : "还没有选择菜品";
     dom.cartTotal.textContent = `¥${cart.totalPrice}`;
+    dom.floatingCartCount.textContent = cart.totalItems;
+    dom.floatingCartTotal.textContent = `¥${cart.totalPrice}`;
+    dom.floatingCart.classList.toggle("show", cart.totalItems > 0);
     dom.submitOrder.disabled = cart.totalItems === 0;
 
     if (!cart.items.length) {
@@ -170,13 +292,13 @@
             </div>
             <div class="cart-item-info">
               <h3>${item.name}</h3>
-              <p>¥${item.price} × ${item.qty}</p>
-              <button class="text-button" type="button" data-remove="${item.id}">删除</button>
+              <p>${item.portionName || "默认"} · ¥${item.price} × ${item.qty}</p>
+              <button class="text-button" type="button" data-remove="${item.cartKey}">删除</button>
             </div>
             <div class="qty-stepper" aria-label="${item.name} 数量">
-              <button type="button" data-dec="${item.id}" aria-label="减少">−</button>
+              <button type="button" data-dec="${item.cartKey}" aria-label="减少">−</button>
               <strong>${item.qty}</strong>
-              <button type="button" data-inc="${item.id}" aria-label="增加">+</button>
+              <button type="button" data-inc="${item.cartKey}" aria-label="增加">+</button>
             </div>
           </article>
         `
@@ -210,7 +332,9 @@
 
     dom.orderList.innerHTML = orders
       .map((order) => {
-        const itemText = order.items.map((item) => `${item.name} × ${item.qty}`).join("、");
+        const itemText = order.items
+          .map((item) => `${item.name}${item.portionName ? `（${item.portionName}）` : ""} × ${item.qty}`)
+          .join("、");
         const statusText = order.status === "delivered" ? "已送达" : "配送中";
         const statusClass = order.status === "delivered" ? "delivered" : "delivering";
         return `
@@ -289,8 +413,15 @@
   }
 
   function hideDeliveryModal() {
+    moveFocusOutOfLayer(dom.deliveryModal);
     dom.deliveryModal.classList.remove("open");
     dom.deliveryModal.setAttribute("aria-hidden", "true");
+  }
+
+  function moveFocusOutOfLayer(layer) {
+    if (layer.contains(document.activeElement)) {
+      dom.cartToggle.focus();
+    }
   }
 
   function openDrawer(drawer) {
@@ -301,12 +432,6 @@
   function closeDrawer(drawer) {
     drawer.classList.remove("open");
     drawer.setAttribute("aria-hidden", "true");
-  }
-
-  function pulseButton(button) {
-    button.classList.remove("pulse");
-    void button.offsetWidth;
-    button.classList.add("pulse");
   }
 
   function showToast(message) {
