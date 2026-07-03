@@ -1,0 +1,12 @@
+{
+  "name": "foodnever",
+  "version": "1.0.0",
+  "description": "一个纯前端单页网站，用 HTML、CSS、JavaScript 和 localStorage 模拟中餐外卖点单体验。",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["点餐", "多巴胺", "游戏", "外卖"],
+  "author": "tangshuo，zhangran",
+  "license": "ISC"
+}

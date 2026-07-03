@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>多巴胺中餐局</title>
+    <link rel="stylesheet" href="css/styles.css" />
+    <script src="js/data.js" defer></script>
+    <script src="js/storage.js" defer></script>
+    <script src="js/cart.js" defer></script>
+    <script src="js/orders.js" defer></script>
+    <script src="js/delivery.js" defer></script>
+    <script src="js/app.js" defer></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="brand-block">
+        <span class="brand-mark" aria-hidden="true">中</span>
+        <div>
+          <h1>多巴胺中餐局</h1>
+          <p>模拟点单体验 · 无需支付 · 纯前端保存</p>
+        </div>
+      </div>
+      <nav class="header-actions" aria-label="快捷操作">
+        <button class="icon-button" id="historyToggle" type="button" aria-label="查看订单历史">
+          <span aria-hidden="true">单</span>
+          <span class="button-text">订单</span>
+        </button>
+        <button class="cart-button" id="cartToggle" type="button" aria-label="打开购物车">
+          <span aria-hidden="true">车</span>
+          <span>购物车</span>
+          <strong id="cartCount">0</strong>
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <section class="status-strip" aria-label="当前状态">
+        <div>
+          <span class="label">今日菜单</span>
+          <strong id="menuCount">0 道菜</strong>
+        </div>
+        <div>
+          <span class="label">配送时间</span>
+          <strong>2 分钟</strong>
+        </div>
+        <div>
+          <span class="label">历史订单</span>
+          <strong id="orderCount">0 单</strong>
+        </div>
+      </section>
+
+      <section class="menu-section" aria-labelledby="menuTitle">
+        <div class="section-heading">
+          <div>
+            <h2 id="menuTitle">中餐菜单</h2>
+            <p>选择想吃的菜，加入购物车后提交模拟订单。</p>
+          </div>
+          <div class="category-tabs" id="categoryTabs" aria-label="菜品分类"></div>
+        </div>
+        <div class="menu-grid" id="menuGrid"></div>
+      </section>
+    </main>
+
+    <aside class="drawer" id="cartDrawer" aria-hidden="true" aria-labelledby="cartTitle">
+      <div class="drawer-panel">
+        <div class="drawer-header">
+          <div>
+            <h2 id="cartTitle">购物车</h2>
+            <p id="cartSummary">还没有选择菜品</p>
+          </div>
+          <button class="close-button" id="cartClose" type="button" aria-label="关闭购物车">×</button>
+        </div>
+        <div class="drawer-content" id="cartItems"></div>
+        <div class="cart-footer">
+          <div class="total-row">
+            <span>合计</span>
+            <strong id="cartTotal">¥0</strong>
+          </div>
+          <button class="primary-button" id="submitOrder" type="button" disabled>提交订单</button>
+        </div>
+      </div>
+    </aside>
+
+    <aside class="drawer" id="historyDrawer" aria-hidden="true" aria-labelledby="historyTitle">
+      <div class="drawer-panel">
+        <div class="drawer-header">
+          <div>
+            <h2 id="historyTitle">订单历史</h2>
+            <p>配送中和已完成订单都会保存在浏览器。</p>
+          </div>
+          <button class="close-button" id="historyClose" type="button" aria-label="关闭订单历史">×</button>
+        </div>
+        <div class="drawer-content order-list" id="orderList"></div>
+      </div>
+    </aside>
+
+    <section class="delivery-modal" id="deliveryModal" aria-hidden="true" aria-live="polite">
+      <div class="delivery-card">
+        <div class="delivery-icon" aria-hidden="true">送</div>
+        <h2 id="deliveryTitle">订单正在配送</h2>
+        <p id="deliverySubtitle">预计 2 分钟送达</p>
+        <div class="timer-display" id="deliveryTimer">02:00</div>
+        <div class="progress-track">
+          <div class="progress-bar" id="deliveryProgress"></div>
+        </div>
+        <div class="delivery-actions">
+          <button class="secondary-button" id="viewCurrentOrder" type="button">查看订单</button>
+          <button class="primary-button" id="closeDelivery" type="button">先去逛逛</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+    <div class="confetti-layer" id="confettiLayer" aria-hidden="true"></div>
+  </body>
+</html>
