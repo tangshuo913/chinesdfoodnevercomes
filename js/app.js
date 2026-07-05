@@ -2,6 +2,7 @@
   const dom = {};
   let selectedCategory = "全部";
   let activeDish = null;
+  let visibleDeliveryOrderId = null;
   let selectedPortionId = "large";
   let selectedDishQty = 1;
 
@@ -338,7 +339,7 @@
         const statusText = order.status === "delivered" ? "已送达" : "配送中";
         const statusClass = order.status === "delivered" ? "delivered" : "delivering";
         return `
-          <article class="order-card ${statusClass}">
+          <article class="order-card ${statusClass}" role="button" tabindex="0" data-order-id="${order.id}">
             <div class="order-card-head">
               <div>
                 <h3>${statusText}</h3>
@@ -355,6 +356,16 @@
         `;
       })
       .join("");
+
+    dom.orderList.querySelectorAll(".order-card[data-order-id]").forEach((card) => {
+      const openOrder = () => openOrderProgress(card.dataset.orderId);
+      card.addEventListener("click", openOrder);
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        openOrder();
+      });
+    });
   }
 
   function submitOrder() {
@@ -382,18 +393,35 @@
     DeliveryTimer.start(activeOrder.id, getDeliveryCallbacks());
   }
 
+  function openOrderProgress(orderId) {
+    const order = OrderStore.getById(orderId);
+    if (!order) return;
+
+    closeDrawer(dom.historyDrawer);
+    showDeliveryModal(order);
+
+    if (order.status === "delivering") {
+      AppStorage.setActiveDelivery(order.id);
+      DeliveryTimer.start(order.id, getDeliveryCallbacks());
+    }
+  }
+
   function getDeliveryCallbacks() {
     return {
-      onTick: ({ remainingMs, progress }) => {
-        dom.deliveryTimer.textContent = DeliveryTimer.formatTime(remainingMs);
-        dom.deliveryProgress.style.width = `${Math.round(progress * 100)}%`;
+      onTick: ({ order, remainingMs, progress }) => {
+        if (visibleDeliveryOrderId === order.id) {
+          dom.deliveryTimer.textContent = DeliveryTimer.formatTime(remainingMs);
+          dom.deliveryProgress.style.width = `${Math.round(progress * 100)}%`;
+        }
         renderOrders();
       },
       onDelivered: (order) => {
-        dom.deliveryTitle.textContent = "骑手已送达";
-        dom.deliverySubtitle.textContent = "订单已保存到历史记录";
-        dom.deliveryTimer.textContent = "00:00";
-        dom.deliveryProgress.style.width = "100%";
+        if (order && visibleDeliveryOrderId === order.id) {
+          dom.deliveryTitle.textContent = "骑手已送达";
+          dom.deliverySubtitle.textContent = "订单已保存到历史记录";
+          dom.deliveryTimer.textContent = "00:00";
+          dom.deliveryProgress.style.width = "100%";
+        }
         renderOrders();
         launchConfetti();
         showToast("骑手已送达");
@@ -405,17 +433,40 @@
   }
 
   function showDeliveryModal(order) {
+    const deliveryState = getDeliveryState(order);
+    visibleDeliveryOrderId = order.id;
     dom.deliveryTitle.textContent = order.status === "delivered" ? "骑手已送达" : "订单正在配送";
     dom.deliverySubtitle.textContent = order.status === "delivered" ? "订单已保存到历史记录" : "预计 2 分钟送达";
-    dom.deliveryProgress.style.width = order.status === "delivered" ? "100%" : "0%";
+    dom.deliveryTimer.textContent = DeliveryTimer.formatTime(deliveryState.remainingMs);
+    dom.deliveryProgress.style.width = `${Math.round(deliveryState.progress * 100)}%`;
     dom.deliveryModal.classList.add("open");
     dom.deliveryModal.setAttribute("aria-hidden", "false");
   }
 
   function hideDeliveryModal() {
     moveFocusOutOfLayer(dom.deliveryModal);
+    visibleDeliveryOrderId = null;
     dom.deliveryModal.classList.remove("open");
     dom.deliveryModal.setAttribute("aria-hidden", "true");
+  }
+
+  function getDeliveryState(order) {
+    if (order.status === "delivered") {
+      return { remainingMs: 0, progress: 1 };
+    }
+
+    const now = Date.now();
+    const startedAt = new Date(order.deliveryStartedAt).getTime();
+    const endsAt = new Date(order.deliveryEndsAt).getTime();
+    if (Number.isNaN(startedAt) || Number.isNaN(endsAt)) {
+      return { remainingMs: OrderStore.DELIVERY_MS, progress: 0 };
+    }
+
+    const totalMs = Math.max(endsAt - startedAt, OrderStore.DELIVERY_MS);
+    const remainingMs = Math.max(endsAt - now, 0);
+    const elapsedMs = Math.min(totalMs, Math.max(now - startedAt, 0));
+    const progress = totalMs ? Math.min(elapsedMs / totalMs, 1) : 1;
+    return { remainingMs, progress };
   }
 
   function moveFocusOutOfLayer(layer) {

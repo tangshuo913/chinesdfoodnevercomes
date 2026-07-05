@@ -558,6 +558,21 @@ main {
 
 .order-card {
   padding: 1rem;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.order-card:hover,
+.order-card:focus-visible {
+  border-color: var(--ink);
+  box-shadow:
+    inset 4px 0 0 currentColor,
+    0 0.6rem 1.4rem rgba(52, 40, 33, 0.1);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .order-card.delivering {
@@ -568,6 +583,22 @@ main {
 .order-card.delivered {
   border-color: rgba(32, 185, 120, 0.42);
   box-shadow: inset 4px 0 0 var(--green);
+}
+
+.order-card.delivering:hover,
+.order-card.delivering:focus-visible {
+  border-color: var(--blue);
+  box-shadow:
+    inset 4px 0 0 var(--blue),
+    0 0.6rem 1.4rem rgba(52, 40, 33, 0.1);
+}
+
+.order-card.delivered:hover,
+.order-card.delivered:focus-visible {
+  border-color: var(--green);
+  box-shadow:
+    inset 4px 0 0 var(--green),
+    0 0.6rem 1.4rem rgba(52, 40, 33, 0.1);
 }
 
 .order-card-head,
