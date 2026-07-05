@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 675" role="img">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#fff4f8"/>
+      <stop offset="1" stop-color="#ffd1df"/>
+    </linearGradient>
+    <linearGradient id="cream" x1="0" x2="0" y1="0" y2="1">
+      <stop stop-color="#fffdf9"/>
+      <stop offset="1" stop-color="#ffe4ec"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="675" fill="url(#bg)"/>
+  <circle cx="190" cy="120" r="82" fill="#ffe8a8" opacity=".7"/>
+  <circle cx="740" cy="120" r="120" fill="#ff89ad" opacity=".3"/>
+  <ellipse cx="454" cy="536" rx="270" ry="46" fill="#dc5d86" opacity=".18"/>
+  <path d="M235 330c42-126 384-126 430 0l-26 164H260z" fill="#f36f98"/>
+  <path d="M255 304c36-102 354-102 390 0 8 24-10 56-42 72-74 38-238 38-312 0-32-16-44-48-36-72z" fill="url(#cream)"/>
+  <path d="M270 390h360l-11 58H281z" fill="#fff8fb"/>
+  <path d="M288 442h324l-10 58H298z" fill="#ffb4c8"/>
+  <g fill="#f4476f">
+    <path d="M360 240c-26-42 14-78 50-52 36-26 76 10 50 52-16 26-50 42-50 42s-34-16-50-42z"/>
+    <path d="M500 248c-22-36 12-67 43-45 31-22 65 9 43 45-14 22-43 36-43 36s-29-14-43-36z"/>
+    <path d="M425 204c-18-30 10-57 36-38 26-19 54 8 36 38-12 19-36 31-36 31s-24-12-36-31z"/>
+  </g>
+  <g fill="#fff7d9" opacity=".9">
+    <circle cx="395" cy="226" r="5"/>
+    <circle cx="524" cy="235" r="5"/>
+    <circle cx="460" cy="195" r="4"/>
+  </g>
+</svg>

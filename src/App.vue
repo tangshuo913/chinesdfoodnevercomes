@@ -6,13 +6,14 @@ import DeliveryStatus from "./components/DeliveryStatus.vue";
 import MenuList from "./components/MenuList.vue";
 import OrderHistory from "./components/OrderHistory.vue";
 import PromoCarousel from "./components/PromoCarousel.vue";
-import { categories, getDishById, getPortionPrice, menuItems } from "./data/menu";
+import { categories, dessertCategories, getDishById, getPortionPrice, menuItems } from "./data/menu";
 import { useCart } from "./composables/useCart";
 import { getDeliverySnapshot, startDelivery, stopDelivery } from "./composables/useDelivery";
 import { useOrders } from "./composables/useOrders";
 import { AppStorage } from "./utils/storage";
 
 const selectedCategory = ref("全部");
+const selectedDessertCategory = ref("全部");
 const cartOpen = ref(false);
 const checkoutOpen = ref(false);
 const historyOpen = ref(false);
@@ -67,7 +68,9 @@ const promoDishes = [...menuItems].sort(() => Math.random() - 0.5).slice(0, 5);
 
 const filteredDishes = computed(() => {
   if (selectedCategory.value === "全部") return menuItems;
-  return menuItems.filter((dish) => dish.category === selectedCategory.value);
+  const categoryItems = menuItems.filter((dish) => dish.category === selectedCategory.value);
+  if (selectedCategory.value !== "甜品饮品" || selectedDessertCategory.value === "全部") return categoryItems;
+  return categoryItems.filter((dish) => dish.dessertCategory === selectedDessertCategory.value);
 });
 
 const selectedPortion = computed(() => {
@@ -92,6 +95,10 @@ watch(
     showDishImage.value = true;
   }
 );
+
+watch(selectedCategory, () => {
+  selectedDessertCategory.value = "全部";
+});
 
 onMounted(() => {
   resumeActiveDelivery();
@@ -306,10 +313,13 @@ function launchConfetti() {
 
     <MenuList
       :categories="categories"
+      :dessert-categories="dessertCategories"
       :selected-category="selectedCategory"
+      :selected-dessert-category="selectedDessertCategory"
       :dishes="filteredDishes"
       :cart-items="cart.items"
       @select-category="selectedCategory = $event"
+      @select-dessert-category="selectedDessertCategory = $event"
       @open-dish="openDishModal"
     />
   </main>
