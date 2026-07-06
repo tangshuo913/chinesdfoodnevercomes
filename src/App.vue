@@ -6,6 +6,7 @@ import DeliveryStatus from "./components/DeliveryStatus.vue";
 import MenuList from "./components/MenuList.vue";
 import OrderHistory from "./components/OrderHistory.vue";
 import PromoCarousel from "./components/PromoCarousel.vue";
+import RedPacketGame from "./components/RedPacketGame.vue";
 import { categories, dessertCategories, getDishById, getPortionPrice, menuItems } from "./data/menu";
 import { useCart } from "./composables/useCart";
 import { getDeliverySnapshot, startDelivery, stopDelivery } from "./composables/useDelivery";
@@ -22,6 +23,8 @@ const selectedPortionId = ref("large");
 const selectedDishQty = ref(1);
 const selectedPaymentMethod = ref("wechat");
 const paying = ref(false);
+const redPacketOpen = ref(false);
+const redPacketDiscount = ref(0);
 const showDishImage = ref(true);
 const visibleDeliveryOrderId = ref(null);
 const deliveryRemainingMs = ref(0);
@@ -119,6 +122,7 @@ onBeforeUnmount(() => {
 function handleKeydown(event) {
   if (event.key !== "Escape") return;
   cartOpen.value = false;
+  redPacketOpen.value = false;
   closeCheckout();
   historyOpen.value = false;
   closeDishModal();
@@ -162,11 +166,34 @@ function closeCheckout() {
 }
 
 function confirmPayment() {
+  if (!cart.items.length || paying.value || redPacketOpen.value) return;
+  redPacketDiscount.value = 0;
+  redPacketOpen.value = true;
+}
+
+function completeRedPacketGame(discount) {
+  redPacketOpen.value = false;
+  const rawDiscount = Number(discount);
+  redPacketDiscount.value = Number.isFinite(rawDiscount) ? Math.max(0, Math.floor(rawDiscount)) : 0;
+  finalizePayment(redPacketDiscount.value);
+}
+
+function skipRedPacketGame() {
+  redPacketOpen.value = false;
+  redPacketDiscount.value = 0;
+  finalizePayment(0);
+}
+
+function cancelRedPacketGame() {
+  redPacketOpen.value = false;
+}
+
+function finalizePayment(discountAmount = 0) {
   if (!cart.items.length || paying.value) return;
   paying.value = true;
 
   payTimerId = window.setTimeout(() => {
-    const order = createFromCart(cart, selectedPaymentMethod.value);
+    const order = createFromCart(cart, selectedPaymentMethod.value, discountAmount);
     paying.value = false;
     payTimerId = null;
     if (!order) return;
@@ -175,7 +202,7 @@ function confirmPayment() {
     checkoutOpen.value = false;
     showDeliveryModal(order);
     startDelivery(order.id, getDeliveryCallbacks());
-    showToast("付款成功，订单已提交");
+    showToast(discountAmount > 0 ? `红包已减 ¥${discountAmount}，订单已提交` : "付款成功，订单已提交");
   }, 800);
 }
 
@@ -350,6 +377,14 @@ function launchConfetti() {
     @back-to-cart="backToCart"
     @select-payment="selectedPaymentMethod = $event"
     @confirm-payment="confirmPayment"
+  />
+
+  <RedPacketGame
+    :open="redPacketOpen"
+    :duration-seconds="15"
+    @complete="completeRedPacketGame"
+    @skip="skipRedPacketGame"
+    @cancel="cancelRedPacketGame"
   />
 
   <OrderHistory

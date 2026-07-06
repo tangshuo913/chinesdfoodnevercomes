@@ -2,6 +2,7 @@
 import { DotLottie } from "@lottiefiles/dotlottie-web";
 import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { formatTime } from "../composables/useDelivery";
+import cookingLottieUrl from "../../assets/lottie/cooking.json?url";
 import riderLottieUrl from "../../assets/lottie/food delivery driver.lottie?url";
 
 const props = defineProps({
@@ -25,7 +26,12 @@ const props = defineProps({
 
 const emit = defineEmits(["close", "view-history"]);
 
+const DELIVERY_START_PROGRESS = 0.4;
+const deliverySteps = ["商家未出餐", "商家已经出餐", "配送中", "已送达"];
+
+const cookingCanvas = ref(null);
 const riderCanvas = ref(null);
+let cookingAnimation = null;
 let riderAnimation = null;
 
 const isDelivered = computed(() => props.order?.status === "delivered");
@@ -33,7 +39,30 @@ const safeProgress = computed(() => Math.min(1, Math.max(0, props.progress)));
 const title = computed(() => (isDelivered.value ? "订单已送达" : "订单正在配送中"));
 const subtitle = computed(() => (isDelivered.value ? "订单已保存到历史记录" : "骑手正在沿途赶来，预计 2 分钟送达"));
 const statusLabel = computed(() => (isDelivered.value ? "已完成" : "实时配送"));
-const progressPercent = computed(() => `${Math.round(safeProgress.value * 100)}%`);
+
+const activeStepIndex = computed(() => {
+  if (isDelivered.value || safeProgress.value >= 1) return 3;
+  if (safeProgress.value >= DELIVERY_START_PROGRESS) return 2;
+  if (safeProgress.value >= 0.25) return 1;
+  return 0;
+});
+
+const stepItems = computed(() =>
+  deliverySteps.map((label, index) => ({
+    label,
+    state: index < activeStepIndex.value ? "complete" : index === activeStepIndex.value ? "current" : "pending"
+  }))
+);
+
+const shouldAnimateRider = computed(() => props.open && activeStepIndex.value === 2 && routeProgress.value < 1);
+const shouldShowRider = computed(() => props.open && activeStepIndex.value >= 2);
+const shouldShowCooking = computed(() => props.open && activeStepIndex.value === 0);
+
+const routeProgress = computed(() => {
+  if (isDelivered.value || safeProgress.value >= 1) return 1;
+  if (safeProgress.value < DELIVERY_START_PROGRESS) return 0;
+  return Math.min(1, (safeProgress.value - DELIVERY_START_PROGRESS) / (1 - DELIVERY_START_PROGRESS));
+});
 
 const riderPosition = computed(() => {
   const points = [
@@ -45,10 +74,10 @@ const riderPosition = computed(() => {
     { x: 84, y: 20 }
   ];
 
-  const progress = isDelivered.value ? 1 : Math.min(0.96, Math.max(0.04, safeProgress.value));
+  const progress = routeProgress.value;
   const segmentSize = 1 / (points.length - 1);
   const segmentIndex = Math.min(points.length - 2, Math.floor(progress / segmentSize));
-  const segmentProgress = (progress - segmentIndex * segmentSize) / segmentSize;
+  const segmentProgress = Math.min(1, Math.max(0, (progress - segmentIndex * segmentSize) / segmentSize));
   const start = points[segmentIndex];
   const end = points[segmentIndex + 1];
 
@@ -61,34 +90,66 @@ const riderPosition = computed(() => {
 const mapStyle = computed(() => ({
   "--rider-x": `${riderPosition.value.x}%`,
   "--rider-y": `${riderPosition.value.y}%`,
-  "--route-remaining": 100 - Math.round(safeProgress.value * 100)
+  "--route-remaining": 100 - Math.round(routeProgress.value * 100)
 }));
 
 watch(
   () => props.open,
   async (open) => {
     if (!open) {
+      cookingAnimation?.pause();
       riderAnimation?.pause();
       return;
     }
 
     await nextTick();
+    mountCookingAnimation();
     mountRiderAnimation();
-    riderAnimation?.play();
+    syncCookingPlayback();
+    syncRiderPlayback();
   },
   { immediate: true }
 );
 
+watch(shouldShowCooking, () => {
+  syncCookingPlayback();
+});
+
+watch(shouldAnimateRider, () => {
+  syncRiderPlayback();
+});
+
 onBeforeUnmount(() => {
+  cookingAnimation?.destroy();
   riderAnimation?.destroy();
+  cookingAnimation = null;
   riderAnimation = null;
 });
+
+function mountCookingAnimation() {
+  if (!cookingCanvas.value || cookingAnimation) return;
+
+  cookingAnimation = new DotLottie({
+    autoplay: false,
+    backgroundColor: "transparent",
+    canvas: cookingCanvas.value,
+    layout: {
+      align: [0.5, 0.5],
+      fit: "contain"
+    },
+    loop: true,
+    renderConfig: {
+      autoResize: true
+    },
+    src: cookingLottieUrl
+  });
+}
 
 function mountRiderAnimation() {
   if (!riderCanvas.value || riderAnimation) return;
 
   riderAnimation = new DotLottie({
-    autoplay: true,
+    autoplay: false,
     backgroundColor: "transparent",
     canvas: riderCanvas.value,
     layout: {
@@ -101,6 +162,26 @@ function mountRiderAnimation() {
     },
     src: riderLottieUrl
   });
+}
+
+function syncCookingPlayback() {
+  if (!cookingAnimation) return;
+
+  if (shouldShowCooking.value) {
+    cookingAnimation.play();
+  } else {
+    cookingAnimation.pause();
+  }
+}
+
+function syncRiderPlayback() {
+  if (!riderAnimation) return;
+
+  if (shouldAnimateRider.value) {
+    riderAnimation.play();
+  } else {
+    riderAnimation.pause();
+  }
 }
 </script>
 
@@ -128,34 +209,34 @@ function mountRiderAnimation() {
             <span>店</span>
             <strong>商家</strong>
           </div>
+          <div class="cooking-lottie" :class="{ show: shouldShowCooking }">
+            <canvas ref="cookingCanvas" width="112" height="112"></canvas>
+          </div>
           <div class="map-pin customer-pin">
             <span>家</span>
             <strong>收货点</strong>
           </div>
 
-          <div class="delivery-rider">
+          <div class="delivery-rider" :class="{ show: shouldShowRider }">
             <canvas ref="riderCanvas" width="132" height="132"></canvas>
           </div>
         </div>
       </div>
 
       <div class="delivery-progress-panel">
-        <div>
-          <span>预计剩余</span>
-          <strong class="timer-display">{{ formatTime(remainingMs) }}</strong>
-        </div>
-        <div>
-          <span>配送进度</span>
-          <strong>{{ progressPercent }}</strong>
-        </div>
+        <span>预计剩余</span>
+        <strong class="timer-display">{{ formatTime(remainingMs) }}</strong>
       </div>
 
-      <div class="progress-track">
-        <div class="progress-bar" :style="{ width: progressPercent }"></div>
-      </div>
+      <ol class="delivery-step-list" aria-label="配送状态">
+        <li v-for="step in stepItems" :key="step.label" :class="step.state">
+          {{ step.label }}
+        </li>
+      </ol>
+
       <div class="delivery-actions">
         <button class="secondary-button" type="button" @click="emit('view-history')">查看订单</button>
-        <button class="primary-button" type="button" @click="emit('close')">先去逛逛</button>
+        <button class="primary-button" type="button" @click="emit('close')">订单完成</button>
       </div>
     </div>
   </section>

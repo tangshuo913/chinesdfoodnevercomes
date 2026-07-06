@@ -984,7 +984,8 @@ main {
 
 .dish-modal,
 .delivery-modal,
-.checkout-modal {
+.checkout-modal,
+.red-packet-modal {
   position: fixed;
   inset: 0;
   display: grid;
@@ -1022,11 +1023,31 @@ main {
     visibility 0s linear 180ms;
 }
 
+.red-packet-modal {
+  z-index: 66;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(36, 33, 42, 0);
+  transition:
+    opacity 180ms ease,
+    background 180ms ease,
+    visibility 0s linear 180ms;
+}
+
 .checkout-modal.open {
   visibility: visible;
   opacity: 1;
   pointer-events: auto;
   background: rgba(36, 33, 42, 0.42);
+  transition-delay: 0s;
+}
+
+.red-packet-modal.open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  background: rgba(36, 33, 42, 0.46);
   transition-delay: 0s;
 }
 
@@ -1458,6 +1479,38 @@ main {
   background: var(--primary);
 }
 
+.cooking-lottie {
+  position: absolute;
+  z-index: 3;
+  left: 16%;
+  top: 55%;
+  display: grid;
+  width: clamp(4rem, 14vw, 5.4rem);
+  aspect-ratio: 1;
+  place-items: center;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(240, 221, 228, 0.9);
+  border-radius: 0.85rem;
+  box-shadow: 0 12px 28px rgba(84, 55, 67, 0.14);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.86);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.cooking-lottie.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.cooking-lottie canvas {
+  width: 100%;
+  height: 100%;
+}
+
 .customer-pin {
   left: 84%;
   top: 20%;
@@ -1477,10 +1530,17 @@ main {
   aspect-ratio: 1;
   place-items: center;
   filter: drop-shadow(0 12px 18px rgba(36, 33, 42, 0.18));
+  opacity: 0;
+  pointer-events: none;
   transform: translate(-50%, -50%);
   transition:
+    opacity 180ms ease,
     left 420ms ease,
     top 420ms ease;
+}
+
+.delivery-rider.show {
+  opacity: 1;
 }
 
 .delivery-rider canvas {
@@ -1489,10 +1549,7 @@ main {
 }
 
 .delivery-progress-panel {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 1rem;
-  align-items: end;
+  display: block;
   margin-top: 1rem;
   padding: 0.85rem 1rem;
   background: #fff;
@@ -1510,15 +1567,42 @@ main {
   display: block;
   margin-top: 0.2rem;
   color: var(--secondary-dark);
-  font-size: 1.15rem;
 }
 
 .timer-display {
   color: var(--secondary-dark);
-  font-size: clamp(2rem, 7vw, 3.2rem);
+  font-size: clamp(1.8rem, 6vw, 2.8rem);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+}
+
+.delivery-step-list {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.85rem 0 0;
+  padding: 0.9rem 1rem;
+  list-style: none;
+  text-align: left;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+}
+
+.delivery-step-list li {
+  min-height: 1.65rem;
+  color: #b9a5a0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.65rem;
+}
+
+.delivery-step-list li.complete {
+  color: #5a433e;
+}
+
+.delivery-step-list li.current {
+  color: var(--primary);
 }
 
 .progress-track {
@@ -1541,7 +1625,209 @@ main {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.red-packet-card {
+  width: min(640px, calc(100vw - 2rem));
+  max-height: min(860px, calc(100vh - 2rem));
+  overflow: hidden auto;
+  padding: clamp(1rem, 3vw, 1.25rem);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  box-shadow: var(--shadow);
+  transform: translateY(16px) scale(0.98);
+  transition: transform 180ms ease;
+}
+
+.red-packet-modal.open .red-packet-card {
+  transform: translateY(0) scale(1);
+}
+
+.red-packet-card.shake {
+  animation: redPacketShake 520ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+.red-packet-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.red-packet-head span {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.65rem;
+  padding: 0 0.65rem;
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  background: var(--primary-soft);
+  border-radius: 999px;
+}
+
+.red-packet-head h2 {
+  margin-top: 0.35rem;
+  font-size: clamp(1.7rem, 4vw, 2.35rem);
+  line-height: 1.1;
+}
+
+.red-packet-scorebar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
   margin-top: 0.9rem;
+  padding: 0.8rem 0.9rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.red-packet-scorebar strong {
+  color: var(--primary-dark);
+  font-size: 1.25rem;
+}
+
+.red-packet-scorebar em {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  color: var(--primary-dark);
+  font-size: 1.4rem;
+  font-style: normal;
+  font-weight: 900;
+  pointer-events: none;
+  text-shadow: 0 8px 18px rgba(231, 36, 53, 0.22);
+  transform: translate(-50%, -50%);
+  animation: redPacketImpact 680ms ease-out forwards;
+}
+
+.red-packet-scorebar em.penalty {
+  color: #2b2024;
+  text-shadow: 0 8px 20px rgba(43, 32, 36, 0.26);
+}
+
+.red-packet-scorebar span {
+  display: grid;
+  min-width: 3rem;
+  min-height: 2rem;
+  place-items: center;
+  color: #fff;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  background: var(--secondary);
+  border-radius: 999px;
+}
+
+.red-packet-stage {
+  position: relative;
+  margin-top: 0.85rem;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background:
+    linear-gradient(rgba(47, 128, 237, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(47, 128, 237, 0.045) 1px, transparent 1px),
+    linear-gradient(135deg, #fff8fa, #eaf3ff);
+  background-size:
+    42px 42px,
+    42px 42px,
+    auto;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+}
+
+.red-packet-video {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: linear-gradient(135deg, #fff8fa, #eaf3ff);
+  opacity: 1;
+  pointer-events: none;
+  transform: scaleX(-1);
+}
+
+.red-packet-stage canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.red-packet-state {
+  position: absolute;
+  z-index: 4;
+  inset: auto 1rem 1rem;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem 0.95rem;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(240, 221, 228, 0.9);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(12px);
+}
+
+.red-packet-state strong {
+  color: var(--primary-dark);
+}
+
+.red-packet-state span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.red-packet-state.error strong {
+  color: var(--secondary-dark);
+}
+
+.red-packet-result {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 1.2rem;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(231, 36, 53, 0.18), transparent 8rem),
+    rgba(255, 248, 250, 0.88);
+  backdrop-filter: blur(14px);
+}
+
+.red-packet-result span {
+  color: var(--primary-dark);
+  font-weight: 900;
+}
+
+.red-packet-result strong {
+  color: #e72435;
+  font-size: clamp(3.8rem, 16vw, 7rem);
+  line-height: 0.95;
+}
+
+.red-packet-result p {
+  color: var(--muted);
+}
+
+.red-packet-actions {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
 }
 
 .toast-stack {
@@ -1629,6 +1915,41 @@ button:focus-visible {
   100% {
     opacity: 0;
     transform: translateY(105vh) translateX(var(--x)) rotate(var(--r));
+  }
+}
+
+@keyframes redPacketImpact {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -30%) scale(0.6);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, -92%) scale(1.28);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -154%) scale(0.9);
+  }
+}
+
+@keyframes redPacketShake {
+  10%,
+  90% {
+    transform: translate(-7px, 4px) rotate(-0.8deg) scale(1.01);
+  }
+  20%,
+  80% {
+    transform: translate(10px, -6px) rotate(0.9deg) scale(1.012);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate(-14px, 7px) rotate(-1.2deg) scale(1.014);
+  }
+  40%,
+  60% {
+    transform: translate(14px, -8px) rotate(1.2deg) scale(1.014);
   }
 }
 
@@ -1744,6 +2065,7 @@ button:focus-visible {
 
   .dish-modal-footer,
   .delivery-actions,
+  .red-packet-actions,
   .checkout-actions,
   .payment-methods {
     grid-template-columns: 1fr;

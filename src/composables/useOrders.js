@@ -54,10 +54,13 @@ function loadOrders() {
   reconcileDeliveryState();
 }
 
-function createFromCart(cartState, paymentMethod) {
+function createFromCart(cartState, paymentMethod, discountAmount = 0) {
   if (!cartState.items.length) return null;
 
   const now = Date.now();
+  const rawDiscount = Number(discountAmount);
+  const discount = Number.isFinite(rawDiscount) ? Math.max(0, Math.floor(rawDiscount)) : 0;
+  const subtotal = cartState.totalPrice;
   const order = {
     id: `order-${now}`,
     createdAt: new Date(now).toISOString(),
@@ -69,7 +72,9 @@ function createFromCart(cartState, paymentMethod) {
     deliveredAt: null,
     status: "delivering",
     items: cartState.items.map((item) => ({ ...item })),
-    total: cartState.totalPrice
+    subtotal,
+    discountAmount: discount,
+    total: Math.max(0, subtotal - discount)
   };
 
   orderState.orders.unshift(order);
